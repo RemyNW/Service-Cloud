@@ -1,0 +1,10 @@
+---
+- name: Configuration de base des nœuds Debian
+  hosts: debian
+  become: true
+
+  tasks:
+    - name: Mettre à jour les paquets
+      apt:
+        update_cache: yes
+        upgrade: dist
