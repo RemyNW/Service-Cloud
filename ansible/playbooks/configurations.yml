@@ -1,10 +1,92 @@
 ---
-- name: Configuration de base des nœuds Debian
+- name: Installation minimale de WordPress
   hosts: debian
   become: true
+
+  vars:
+    db_name: wordpress
+    db_user: wp_user
+    db_password: wp_pass
+    wp_dir: /var/www/html
 
   tasks:
     - name: Mettre à jour les paquets
       apt:
         update_cache: yes
         upgrade: dist
+
+    - name: Installer Apache, PHP, MariaDB et autres dépendances
+      apt:
+        name:
+          - apache2
+          - php
+          - php-mysql
+          - mariadb-server
+          - wget
+          - unzip
+        state: present
+
+    - name: Démarrer et activer Apache
+      service:
+        name: apache2
+        state: started
+        enabled: true
+
+    - name: Démarrer et activer MariaDB
+      service:
+        name: mariadb
+        state: started
+        enabled: true
+
+    - name: Créer la base de données WordPress
+      mysql_db:
+        name: "{{ db_name }}"
+        state: present
+
+    - name: Créer l'utilisateur WordPress pour la base
+      mysql_user:
+        name: "{{ db_user }}"
+        password: "{{ db_password }}"
+        priv: "{{ db_name }}.*:ALL"
+        state: present
+
+    - name: Télécharger WordPress
+      get_url:
+        url: https://wordpress.org/latest.zip
+        dest: /tmp/wordpress.zip
+
+    - name: Décompresser WordPress
+      unarchive:
+        src: /tmp/wordpress.zip
+        dest: /tmp
+        remote_src: yes
+
+    - name: Copier les fichiers WordPress dans le répertoire web
+      copy:
+        src: /tmp/wordpress/
+        dest: "{{ wp_dir }}"
+        remote_src: yes
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+    - name: Créer un wp-config.php de base
+      copy:
+        dest: "{{ wp_dir }}/wp-config.php"
+        content: |
+          <?php
+          define( 'DB_NAME', '{{ db_name }}' );
+          define( 'DB_USER', '{{ db_user }}' );
+          define( 'DB_PASSWORD', '{{ db_password }}' );
+          define( 'DB_HOST', 'localhost' );
+          define( 'DB_CHARSET', 'utf8' );
+          define( 'DB_COLLATE', '' );
+          $table_prefix = 'wp_';
+          define( 'WP_DEBUG', false );
+          if ( ! defined( 'ABSPATH' ) ) {
+              define( 'ABSPATH', __DIR__ . '/' );
+          }
+          require_once ABSPATH . 'wp-settings.php';
+        owner: www-data
+        group: www-data
+        mode: '0644'
