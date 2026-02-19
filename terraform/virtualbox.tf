@@ -1,22 +1,21 @@
 provider "virtualbox" {}
 
-resource "virtualbox_image" "debian" {
-  name   = "debian-11"
-  url    = "https://app.vagrantup.com/debian/boxes/bullseye64/versions/11.6.0/providers/virtualbox.box"
-  sha256 = "c0276a9d49c5b667d2de9e72d24389c71fd6a7f4189b7a517e3bb5b7f9933e01"
-}
-
 resource "virtualbox_vm" "debian_vm" {
-  name   = "vm-debian-ansible"
-  image  = virtualbox_image.debian.id
+  name   = "debian-wordpress"
+  image  = "https://cloud.debian.org/images/cloud/buster/latest/debian-10-genericcloud-amd64.vdi"
+
   cpus   = 1
-  memory = 1024
+  memory = "1024 mib"
 
   network_adapter {
-    type           = "hostonly"
-    host_interface = "vboxnet0" 
+    type   = "nat"
+    device = "IntelPro1000MTDesktop"
   }
 
-  ssh_username = "vagrant"
-  ssh_password = "vagrant"
+  storage_controller {
+    name = "SATA Controller"
+  }
+
+  ssh_username = "debian"
+  ssh_password = "debian"
 }
